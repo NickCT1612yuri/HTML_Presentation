@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distributed Database Concepts · Chapter 23</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   THEMES — every colour on a slide is one of these tokens.
+   --f-* = fill role, --t-* = text / stroke role.
+   ===================================================================== */
+:root{
+  --sans:"Inter","SF Pro Text",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --page:#E9ECF1; --slide:#FCFCFA; --shadow:0 18px 50px -18px rgba(20,30,60,.28);
+  --grad:linear-gradient(90deg,#3557E6 0%,#7C5CE6 55%,#F26B1D 100%);
+  --divpanel:linear-gradient(160deg,#3557E6 0%,#2A3FB8 60%,#23308F 100%);
+
+  --f-bg:#FCFCFA; --f-white:#FFFFFF; --f-soft:#F1F3F7; --f-line:#D9DEE6; --f-faint:#A2ABBA; --f-muted:#6B7385;
+  --f-blue:#3557E6; --f-blue_d:#2340B8; --f-blue_s:#E2E8FD; --f-blue_xs:#EFF2FE;
+  --f-orange:#D9480F; --f-orange_m:#F26B1D; --f-orange_s:#FEEBDD;
+  --f-green:#1F8A4C; --f-green_m:#2FB36A; --f-green_s:#DDF4E6;
+  --f-red:#C92A2A; --f-red_m:#E5484D; --f-red_s:#FDE4E4;
+
+  --t-ink:#141B2D; --t-body:#3A4457; --t-muted:#6B7385; --t-faint:#A2ABBA; --t-line:#D9DEE6;
+  --t-white:#FFFFFF; --t-onaccent_soft:#DCE4FF;
+  --t-blue:#3557E6; --t-blue_d:#2340B8; --t-orange:#C2410C; --t-orange_m:#F26B1D;
+  --t-green:#1B7A43; --t-green_m:#2FB36A; --t-red:#C92A2A; --t-red_m:#E5484D;
+}
+[data-theme="dark"]{
+  --page:#05080F; --slide:#0F172A; --shadow:0 25px 60px -15px rgba(0,0,0,.7);
+  --grad:linear-gradient(90deg,#38BDF8 0%,#818CF8 55%,#FB923C 100%);
+  --divpanel:linear-gradient(160deg,#1D3A8A 0%,#1E2A6B 60%,#161E4D 100%);
+
+  --f-bg:#0F172A; --f-white:#1A2337; --f-soft:#1A2337; --f-line:#334155; --f-faint:#56627A; --f-muted:#64748B;
+  --f-blue:#4C6EF5; --f-blue_d:#3B5BDB; --f-blue_s:rgba(96,140,255,.20); --f-blue_xs:rgba(96,140,255,.11);
+  --f-orange:#F76707; --f-orange_m:#F76707; --f-orange_s:rgba(251,146,60,.17);
+  --f-green:#2F9E44; --f-green_m:#2F9E44; --f-green_s:rgba(74,222,128,.15);
+  --f-red:#E03131; --f-red_m:#E03131; --f-red_s:rgba(248,113,113,.17);
+
+  --t-ink:#F1F5F9; --t-body:#CBD5E1; --t-muted:#94A3B8; --t-faint:#64748B; --t-line:#334155;
+  --t-white:#FFFFFF; --t-onaccent_soft:#C7D2FE;
+  --t-blue:#7EA6FF; --t-blue_d:#A9C2FF; --t-orange:#FDBA74; --t-orange_m:#FB923C;
+  --t-green:#86EFAC; --t-green_m:#4ADE80; --t-red:#FCA5A5; --t-red_m:#F87171;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--page);font-family:var(--sans);color:var(--t-ink);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{overflow:hidden}
+
+/* =====================================================================
+   SLIDE
+   ===================================================================== */
+.frame{position:fixed;inset:0;display:none}
+.frame.active{display:block}
+.slide{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center;
+  background:var(--slide);overflow:hidden;box-shadow:var(--shadow);border-radius:4px}
+.slide .accent{position:absolute;left:0;top:0;right:0;height:5px;background:var(--grad);z-index:2}
+.k-divider .accent,.k-quiz .accent,.k-title .accent{display:none}
+.el{position:absolute}
+.tx,.bx{display:flex;flex-direction:column;overflow:visible}
+.bx p,.tx p{position:relative;letter-spacing:-.012em}
+.ln{left:0;top:0;width:1280px;height:720px;overflow:visible;pointer-events:none}
+.card{box-shadow:0 1px 2px rgba(20,30,60,.06),0 6px 18px -10px rgba(20,30,60,.18)}
+[data-theme="dark"] .card{box-shadow:none;outline:1px solid #2A3650}
+.dot{display:inline-block;width:.42em;height:.42em;border-radius:50%;background:var(--t-blue);margin:0 .55em .12em .1em;vertical-align:middle}
+code{font-family:var(--mono);font-size:.92em;color:var(--t-blue_d)}
+b{font-weight:700}
+
+.kicker{font-size:15px;font-weight:700;letter-spacing:.11em;color:var(--t-blue);text-transform:uppercase;white-space:nowrap}
+.title{font-size:41px;font-weight:800;letter-spacing:-.022em;line-height:1.12;color:var(--t-ink)}
+.divpanel{background:var(--divpanel)}
+.bignum{font-size:200px;font-weight:800;letter-spacing:-.05em;line-height:1;color:#fff}
+.quizbar{background:var(--divpanel)}
+.foot{position:absolute;left:58px;right:58px;bottom:16px;display:flex;justify-content:space-between;align-items:center;
+  font-size:13px;color:var(--t-faint);border-top:1px solid var(--f-line);padding-top:8px;z-index:3}
+.foot b{color:var(--t-muted);margin-left:14px;font-weight:700}
+.k-divider .foot{border-top:none;left:58px}
+.k-divider .foot span:first-child{color:var(--t-onaccent_soft)}
+.k-quiz .foot{border-top:1px solid var(--f-line)}
+.k-title .foot{border-top:none}
+.notes{display:none}
+
+/* ---------- element entrances (screen only) ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:none}}
+@keyframes pop{0%{opacity:0;transform:scale(.4)}70%{transform:scale(1.12)}100%{opacity:1;transform:none}}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.ln.draw line{stroke-dasharray:1;stroke-dashoffset:0}
+.slide.play .el:not([data-step]),.slide .el[data-step].shown{animation:rise .55s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d,0s)}
+.slide.play .grow:not([data-step]),.slide .grow[data-step].shown{transform-origin:left center;animation:grow .9s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0s) + .15s)}
+.slide.play .pop:not([data-step]),.slide .pop[data-step].shown{animation:pop .5s cubic-bezier(.2,.8,.3,1.2) both;animation-delay:var(--d,0s)}
+.slide.play .ln:not([data-step]),.slide .ln[data-step].shown{animation:fadein .2s both;animation-delay:var(--d,0s)}
+.slide.play .ln.draw:not([data-step]) line,.slide .ln.draw[data-step].shown line{animation:draw .7s ease-out both;animation-delay:calc(var(--d,0s) + .1s)}
+.slide [data-step]{opacity:0;visibility:hidden}
+.slide [data-step].shown{opacity:1;visibility:visible}
+.packet{opacity:.9}
+.kicker.practice{color:var(--t-orange_m)}
+.kicker.practice::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--t-orange_m);margin-right:9px;vertical-align:1px;
+  box-shadow:0 0 0 0 var(--t-orange_m);animation:ping 1.8s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(242,107,29,.55)}100%{box-shadow:0 0 0 10px rgba(242,107,29,0)}}
+#stepdots{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;display:flex;gap:6px;z-index:40}
+#stepdots i{width:7px;height:7px;border-radius:50%;background:var(--t-faint);opacity:.45}
+#stepdots i.on{background:var(--t-blue);opacity:1}
+
+/* ---------- slide transitions ---------- */
+@keyframes inR{from{opacity:0;transform:translate(calc(-50% + 70px),-50%) scale(var(--k))}to{opacity:1;transform:translate(-50%,-50%) scale(var(--k))}}
+@keyframes inL{from{opacity:0;transform:translate(calc(-50% - 70px),-50%) scale(var(--k))}to{opacity:1;transform:translate(-50%,-50%) scale(var(--k))}}
+@keyframes outL{to{opacity:0;transform:translate(calc(-50% - 50px),-50%) scale(var(--k))}}
+@keyframes outR{to{opacity:0;transform:translate(calc(-50% + 50px),-50%) scale(var(--k))}}
+@keyframes zoomIn{from{opacity:0;transform:translate(-50%,-50%) scale(calc(var(--k) * .94))}to{opacity:1;transform:translate(-50%,-50%) scale(var(--k))}}
+@keyframes wipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.frame.leaving{display:block;z-index:1;pointer-events:none}
+.frame.active{z-index:2}
+.frame.leaving.fw .slide{animation:outL .38s ease-in both}
+.frame.leaving.bw .slide{animation:outR .38s ease-in both}
+.frame.active.fw .slide{animation:inR .5s cubic-bezier(.2,.75,.25,1) both}
+.frame.active.bw .slide{animation:inL .5s cubic-bezier(.2,.75,.25,1) both}
+.frame.active.fw .slide.k-divider,.frame.active.fw .slide.k-title{animation:zoomIn .6s cubic-bezier(.2,.75,.25,1) both}
+.slide.play .divpanel{animation:wipe .7s cubic-bezier(.7,0,.2,1) both}
+.slide.play .bignum{animation:pop .7s .25s cubic-bezier(.2,.8,.3,1.2) both}
+.slide.play .accent{animation:wipe .8s cubic-bezier(.7,0,.2,1) both}
+@media (prefers-reduced-motion:reduce){.slide *, .slide{animation:none!important}}
+
+/* =====================================================================
+   OVERVIEW (grid of thumbnails)
+   ===================================================================== */
+body.overview{overflow:auto}
+body.overview #deck{display:grid;grid-template-columns:repeat(auto-fill,minmax(256px,1fr));gap:44px 22px;padding:28px 28px 90px}
+body.overview .frame{position:relative;display:block;inset:auto;aspect-ratio:16/9;cursor:pointer;border-radius:6px;outline:2px solid transparent;outline-offset:3px}
+body.overview .frame:hover{outline-color:var(--t-faint)}
+body.overview .frame.active{outline-color:var(--t-blue)}
+body.overview .slide{left:0;top:0;transform-origin:0 0}
+body.overview .slide .el,body.overview .slide *{animation:none!important}
+body.overview .slide [data-step]{opacity:1;visibility:visible}
+body.overview .packet,body.overview #stepdots{display:none}
+body.overview .ovnum{display:block}
+.ovnum{display:none;position:absolute;left:2px;right:2px;bottom:-24px;font-size:12px;color:var(--t-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* =====================================================================
+   UI: progress, toolbar, notes drawer, help
+   ===================================================================== */
+#progress{position:fixed;left:0;bottom:0;height:3px;background:var(--grad);z-index:50;transition:width .3s}
+#bar{position:fixed;right:18px;bottom:16px;display:flex;gap:6px;align-items:center;z-index:60;
+  background:rgba(20,27,45,.82);backdrop-filter:blur(8px);color:#E2E8F0;border-radius:999px;padding:6px 8px;
+  font-size:13px;opacity:0;transition:opacity .3s}
+body.ui #bar,#bar:hover,body.overview #bar{opacity:1}
+#bar button{background:transparent;color:#E2E8F0;border:0;border-radius:999px;padding:6px 10px;cursor:pointer;font:600 13px var(--sans)}
+#bar button:hover{background:rgba(255,255,255,.12)}
+#count{padding:0 6px;font-variant-numeric:tabular-nums;color:#94A3B8}
+#drawer{position:fixed;left:50%;transform:translateX(-50%);bottom:64px;width:min(920px,92vw);max-height:42vh;overflow:auto;
+  background:rgba(15,23,42,.94);color:#E2E8F0;border-radius:14px;padding:18px 22px;z-index:55;display:none;font-size:17px;line-height:1.55;
+  box-shadow:0 20px 50px rgba(0,0,0,.4)}
+body.notes-on #drawer{display:block}
+#drawer .cue{color:#FDBA74;font-size:14px;margin-bottom:8px}
+#drawer p{margin-bottom:8px}
+#help{position:fixed;inset:0;background:rgba(5,8,15,.6);display:none;align-items:center;justify-content:center;z-index:70}
+body.help-on #help{display:flex}
+#help .box{background:#0F172A;color:#E2E8F0;border-radius:16px;padding:26px 32px;min-width:420px;font-size:15px;line-height:2}
+#help kbd{display:inline-block;min-width:34px;text-align:center;background:#1E293B;border:1px solid #334155;border-radius:6px;padding:0 8px;margin-right:12px;font:600 13px var(--mono)}
+#help h3{margin-bottom:8px;font-size:18px}
+
+/* =====================================================================
+   PRINT / PDF: one slide per 1280×720 page
+   ===================================================================== */
+@page{size:1280px 720px;margin:0}
+@media print{
+  html,body{background:var(--slide)!important;overflow:visible!important}
+  #bar,#drawer,#help,#progress{display:none!important}
+  #deck{display:block!important;padding:0!important}
+  .frame,body.overview .frame{position:relative!important;display:block!important;inset:auto!important;width:1280px!important;height:720px!important;
+    break-after:page;page-break-after:always;outline:none!important;aspect-ratio:auto!important}
+  .frame:last-child{break-after:auto;page-break-after:auto}
+  .slide{position:absolute!important;left:0!important;top:0!important;transform:none!important;box-shadow:none!important;border-radius:0!important}
+  .slide .el,.slide .el *,.slide,.slide *{animation:none!important}
+  .slide [data-step]{opacity:1!important;visibility:visible!important}
+  .packet,#stepdots{display:none!important}
+  .ovnum{display:none!important}
+}
+</style>
+</head>
+<body class="ui">
+<main id="deck">
+<!--SLIDES-->
+</main>
+
+<div id="progress"></div>
+<div id="stepdots"></div>
+<div id="drawer"></div>
+<div id="bar">
+  <button id="bPrev" title="Previous (←)">◀</button><span id="count">1 / {{TOTAL}}</span><button id="bNext" title="Next (→)">▶</button>
+  <button id="bOver" title="Overview (O)">▦ Overview</button>
+  <button id="bNotes" title="Speaker notes (N)">Notes</button>
+  <button id="bPres" title="Presenter window (S)">Presenter</button>
+  <button id="bTheme" title="Light / dark (T)">◐ Theme</button>
+  <button id="bFull" title="Full screen (F)">⛶</button>
+  <button id="bPdf" title="Print / Save as PDF (P)">PDF</button>
+  <button id="bHelp" title="Keyboard shortcuts (?)">?</button>
+</div>
+<div id="help"><div class="box">
+  <h3>Keyboard shortcuts</h3>
+  <div><kbd>→</kbd><kbd>Space</kbd> next step / slide &nbsp; <kbd>←</kbd> back</div>
+  <div style="color:#94A3B8;font-size:13px;line-height:1.4;margin:-4px 0 6px 58px">Dots at the bottom = parts of the slide still to reveal</div>
+  <div><kbd>Home</kbd><kbd>End</kbd> first / last slide · type a number + <kbd>Enter</kbd> to jump</div>
+  <div><kbd>O</kbd> overview grid (click a slide to open it)</div>
+  <div><kbd>N</kbd> speaker notes under the slide</div>
+  <div><kbd>S</kbd> presenter window (notes, next slide, timer)</div>
+  <div><kbd>T</kbd> light / dark theme</div>
+  <div><kbd>F</kbd> full screen · <kbd>P</kbd> print / save as PDF</div>
+  <div><kbd>Esc</kbd> close this panel</div>
+</div></div>
+
+<script>
+(function(){
+  const deck=document.getElementById('deck');
+  const sections=[...deck.querySelectorAll('section.slide')];
+  const frames=sections.map((s,i)=>{const f=document.createElement('div');f.className='frame';s.before(f);f.appendChild(s);
+    const n=document.createElement('span');n.className='ovnum';n.textContent=(i+1)+' · '+(s.dataset.title||'');f.appendChild(n);
+    f.addEventListener('click',e=>{if(document.body.classList.contains('overview')){e.stopPropagation();toggleOverview(false);go(i)}});return f});
+  const N=sections.length; let cur=0; let typed=''; let presenter=null; const t0=Date.now();
+  const $=id=>document.getElementById(id);
+
+  function store(k,v){try{v===undefined?null:localStorage.setItem(k,v);return localStorage.getItem(k)}catch(e){return null}}
+  const saved=store('ddb-theme'); if(saved) document.documentElement.dataset.theme=saved;
+
+  function fit(){
+    const ov=document.body.classList.contains('overview');
+    sections.forEach((s,i)=>{
+      if(ov){const w=frames[i].clientWidth; s.style.transform='scale('+(w/1280)+')';}
+      else{const k=Math.min(innerWidth/1280,innerHeight/720)*0.985; s.style.setProperty('--k',k); s.style.transform='translate(-50%,-50%) scale('+k+')';}
+    });
+  }
+  function play(s){s.classList.remove('play');void s.offsetWidth;s.classList.add('play')}
+  let shown=0;
+  const nsteps=i=>parseInt(sections[i].dataset.steps||'0',10);
+  function setSteps(i,n){shown=n;sections[i].querySelectorAll('[data-step]').forEach(el=>el.classList.toggle('shown',parseInt(el.dataset.step,10)<=n));dots()}
+  function dots(){const n=nsteps(cur);$('stepdots').innerHTML=n?Array.from({length:n},(_,k)=>'<i class="'+(k<shown?'on':'')+'"></i>').join(''):''}
+  function next(){if(!document.body.classList.contains('overview')&&shown<nsteps(cur)){setSteps(cur,shown+1);updatePresenter()}else go(cur+1)}
+  function prev(){if(!document.body.classList.contains('overview')&&shown>0){setSteps(cur,shown-1);updatePresenter()}else go(cur-1,true,true)}
+  let leaveT;
+  function go(i,anim=true,fullSteps=false){
+    const old=cur;
+    i=Math.max(0,Math.min(N-1,i));
+    if(i===old&&anim&&frames[old].classList.contains('active')){return}
+    cur=i;
+    const dir=cur>=old?'fw':'bw';
+    clearTimeout(leaveT);
+    frames.forEach((f,k)=>{f.classList.remove('leaving','fw','bw');f.classList.toggle('active',k===cur)});
+    const ov=document.body.classList.contains('overview');
+    if(anim&&!ov&&old!==cur){frames[old].classList.add('leaving',dir);frames[cur].classList.add(dir);
+      leaveT=setTimeout(()=>frames[old].classList.remove('leaving','fw','bw'),420)}
+    setSteps(cur,fullSteps?nsteps(cur):0);
+    if(anim && !ov) play(sections[cur]);
+    $('count').textContent=(cur+1)+' / '+N;
+    $('progress').style.width=((cur+1)/N*100)+'%';
+    try{history.replaceState(null,'','#'+(cur+1))}catch(e){}
+    renderNotes(); updatePresenter();
+  }
+  function noteHTML(s){const a=s.querySelector('.notes');const cue=a.dataset.cue||'';
+    const ps=a.textContent.split('\n').map(x=>x.trim()).filter(Boolean).map(x=>'<p>'+x.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</p>').join('');
+    return (cue?'<div class="cue">On screen: '+cue.replace(/</g,'&lt;')+'</div>':'')+ps}
+  function renderNotes(){$('drawer').innerHTML='<div style="font-weight:700;margin-bottom:6px">'+(cur+1)+' · '+(sections[cur].dataset.title||'')+'</div>'+noteHTML(sections[cur])}
+  function toggleOverview(on){
+    document.body.classList.toggle('overview',on);
+    fit(); if(on) frames[cur].scrollIntoView({block:'center'}); else {setSteps(cur,0);play(sections[cur])}
+  }
+  function theme(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';store('ddb-theme',r.dataset.theme)}
+  function full(){if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.()}
+  function pdf(){const ov=document.body.classList.contains('overview');window.print()}
+
+  /* presenter window */
+  function openPresenter(){
+    if(presenter && !presenter.closed){presenter.focus();return}
+    presenter=window.open('','ddb-presenter','width=980,height=720');
+    if(!presenter){alert('Allow pop-ups to open the presenter window.');return}
+    presenter.document.write('<!doctype html><title>Presenter</title><style>body{margin:0;font-family:Inter,system-ui,sans-serif;background:#0B1220;color:#E2E8F0;display:grid;grid-template-rows:auto 1fr auto;height:100vh}header{display:flex;justify-content:space-between;align-items:center;padding:14px 22px;background:#111A2E}#t{font:700 30px ui-monospace,Menlo,monospace;color:#7EA6FF}#n{font-size:15px;color:#94A3B8}main{padding:18px 26px;overflow:auto;font-size:20px;line-height:1.6}main p{margin:0 0 12px}.cue{color:#FDBA74;font-size:16px;margin-bottom:10px}h2{margin:0 0 10px;font-size:24px}footer{display:flex;gap:10px;align-items:center;padding:12px 22px;background:#111A2E;font-size:15px;color:#94A3B8}button{font:600 15px system-ui;padding:8px 18px;border-radius:8px;border:0;background:#1E293B;color:#E2E8F0;cursor:pointer}#next{margin-left:auto}</style><header><div id="n"></div><div id="t">00:00</div></header><main id="m"></main><footer><button id="p">◀ Prev</button><button id="x">Next ▶</button><span id="next"></span><button id="r">Reset timer</button></footer>');
+    presenter.document.close();
+    const P=presenter.document; let start=Date.now();
+    P.getElementById('p').onclick=prev; P.getElementById('x').onclick=next;
+    P.getElementById('r').onclick=()=>{start=Date.now()};
+    P.addEventListener('keydown',key);
+    presenter.setInterval(()=>{const s=Math.floor((Date.now()-start)/1000);P.getElementById('t').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},500);
+    updatePresenter();
+  }
+  function updatePresenter(){
+    if(!presenter||presenter.closed)return; const P=presenter.document;
+    const ns=nsteps(cur);
+    P.getElementById('n').textContent='Slide '+(cur+1)+' / '+N+(ns?'  ·  click '+shown+' / '+ns:'');
+    P.getElementById('m').innerHTML='<h2>'+(sections[cur].dataset.title||'')+'</h2>'+noteHTML(sections[cur]);
+    P.getElementById('next').textContent=cur+1<N?'Next: '+(sections[cur+1].dataset.title||''):'Last slide';
+  }
+
+  function key(e){
+    const k=e.key;
+    if(document.body.classList.contains('help-on')&&k!=='?'){document.body.classList.remove('help-on');return}
+    if(/^[0-9]$/.test(k)){typed+=k;return}
+    if(k==='Enter'&&typed){go(parseInt(typed,10)-1);typed='';return}
+    typed='';
+    if(['ArrowRight','ArrowDown','PageDown',' '].includes(k)){e.preventDefault();next()}
+    else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
+    else if(k==='Home')go(0); else if(k==='End')go(N-1);
+    else if(k==='o'||k==='O')toggleOverview(!document.body.classList.contains('overview'));
+    else if(k==='Escape'){if(document.body.classList.contains('overview'))toggleOverview(false);document.body.classList.remove('notes-on')}
+    else if(k==='n'||k==='N')document.body.classList.toggle('notes-on');
+    else if(k==='t'||k==='T')theme();
+    else if(k==='f'||k==='F')full();
+    else if(k==='s'||k==='S')openPresenter();
+    else if(k==='p'||k==='P'){e.preventDefault();pdf()}
+    else if(k==='?')document.body.classList.toggle('help-on');
+  }
+  document.addEventListener('keydown',key);
+  $('bPrev').onclick=prev; $('bNext').onclick=next;
+  $('bOver').onclick=()=>toggleOverview(!document.body.classList.contains('overview'));
+  $('bNotes').onclick=()=>document.body.classList.toggle('notes-on');
+  $('bPres').onclick=openPresenter; $('bTheme').onclick=theme; $('bFull').onclick=full; $('bPdf').onclick=pdf;
+  $('bHelp').onclick=()=>document.body.classList.toggle('help-on');
+
+  /* show toolbar briefly on mouse move */
+  let hide; addEventListener('mousemove',()=>{document.body.classList.add('ui');clearTimeout(hide);hide=setTimeout(()=>document.body.classList.remove('ui'),2200)});
+  hide=setTimeout(()=>document.body.classList.remove('ui'),3000);
+  /* click / swipe to advance */
+  deck.addEventListener('click',e=>{if(document.body.classList.contains('overview'))return; if(e.clientX>innerWidth*0.25)next();else prev()});
+  let tx=null; addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+  addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)(dx<0?next:prev)();tx=null});
+
+  addEventListener('resize',fit);
+  addEventListener('beforeprint',()=>sections.forEach(s=>s.style.transform='none'));
+  addEventListener('afterprint',fit);
+  fit();
+  const h=parseInt((location.hash||'').slice(1),10);
+  go(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
